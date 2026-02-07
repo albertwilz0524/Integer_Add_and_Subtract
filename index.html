@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Integer Flow | Number Line Mastery</title>
+    <style>
+        :root {
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --accent: #f43f5e;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --track-color: #334155;
+            --tick-color: #64748b;
+            --success: #10b981;
+            --error: #ef4444;
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* LAYOUT */
+        .app-container {
+            max-width: 800px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            padding: 1rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+        }
+
+        .logo { font-weight: 800; font-size: 1.2rem; letter-spacing: -0.5px; }
+        .logo span { color: var(--primary); }
+
+        /* LEVEL NAV */
+        .level-bar {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 1rem;
+            scrollbar-width: none;
+        }
+        .level-chip {
+            background: var(--bg-card);
+            border: 1px solid var(--track-color);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .level-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .level-chip.locked { opacity: 0.5; cursor: not-allowed; }
+
+        /* MAIN GAME AREA */
+        .game-card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Center content vertically */
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        /* QUESTION TEXT */
+        .question-display {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+        .instruction-text {
+            color: var(--text-muted);
+            font-size: 1rem;
+            margin-bottom: 2rem;
+            min-height: 1.5em;
+            text-align: center;
+        }
+        .highlight { color: var(--primary); font-weight: bold; }
+        .highlight-neg { color: var(--accent); font-weight: bold; }
+
+        /* NUMBER LINE COMPONENT */
+        .number-line-container {
+            width: 100%;
+            height: 120px;
+            position: relative;
+            margin: 1rem 0 3rem 0;
+            display: flex;
+            align-items: center;
+        }
+        .number-line-container.hidden { display: none; }
+
+        .line-track {
+            width: 100%;
+            height: 4px;
+            background: var(--track-color);
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            border-radius: 2px;
+        }
+
+        .ticks {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .tick {
+            position: absolute;
+            width: 2px;
+            height: 16px;
+            background: var(--tick-color);
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .tick.zero { height: 24px; background: var(--text-main); width: 3px; }
+        .tick-label {
+            position: absolute;
+            top: 20px;
+            transform: translateX(-50%);
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* INTERACTIVE HANDLE */
+        .slider-handle {
+            width: 40px;
+            height: 40px;
+            background: var(--primary);
+            border: 4px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            cursor: grab;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 0.9rem;
+            color: white;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .slider-handle:active { cursor: grabbing; transform: translate(-50%, -50%) scale(1.1); }
+        .slider-handle.static-indicator {
+            cursor: default;
+            background: var(--bg-card);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* GHOST DOT (Shows starting position) */
+        .ghost-dot {
+            width: 16px;
+            height: 16px;
+            background: var(--text-muted);
+            opacity: 0.3;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+        }
+
+        /* INPUT AREA (For higher levels) */
+        .input-area {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        .input-area.hidden { display: none; }
+        
+        input[type="number"] {
+            background: var(--track-color);
+            border: 2px solid transparent;
+            color: white;
+            font-size: 2rem;
+            width: 120px;
+            padding: 0.5rem;
+            border-radius: 12px;
+            text-align: center;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        /* BUTTONS */
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 2rem;
+            width: 100%;
+            max-width: 300px;
+            touch-action: manipulation;
+        }
+        .btn:active { background: var(--primary-dark); transform: scale(0.98); }
+        .btn.secondary { background: transparent; border: 1px solid var(--track-color); color: var(--text-muted); margin-top: 10px; font-size: 0.9rem; padding: 0.5rem; }
+
+        /* FEEDBACK ANIMATIONS */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        .shake { animation: shake 0.3s ease-in-out; }
+        
+        .correct-bg { background-color: rgba(16, 185, 129, 0.1) !important; border-color: var(--success) !important; }
+        .wrong-bg { background-color: rgba(239, 68, 68, 0.1) !important; border-color: var(--error) !important; }
+
+        /* PROGRESS */
+        .progress-wrapper { width: 100%; max-width: 300px; margin-top: 1rem; }
+        .progress-track { height: 6px; background: var(--track-color); border-radius: 3px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.3s; }
+        .progress-text { text-align: right; font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <header>
+        <div class="logo">Integer<span>Flow</span></div>
+        <button class="btn secondary" style="width: auto; margin:0;" onclick="resetApp()">Reset Progress</button>
+    </header>
+
+    <div class="level-bar" id="levelNav">
+        <!-- Generated via JS -->
+    </div>
+
+    <main class="game-card">
+        <div class="instruction-text" id="instruction">Start at 0. Move to answer.</div>
+        <div class="question-display" id="question">-</div>
+
+        <!-- VISUAL COMPONENT -->
+        <div class="number-line-container" id="numberLine">
+            <div class="line-track"></div>
+            <div class="ticks" id="ticks"></div>
+            <div class="ghost-dot" id="ghostDot"></div>
+            <div class="slider-handle" id="handle">?</div>
+        </div>
+
+        <!-- INPUT COMPONENT (For Levels 3+) -->
+        <div class="input-area hidden" id="inputArea">
+            <input type="number" id="numInput" placeholder="?" inputmode="numeric">
+        </div>
+
+        <button class="btn" id="actionBtn">Check Answer</button>
+
+        <div class="progress-wrapper">
+            <div class="progress-track">
+                <div class="progress-fill" id="progressBar"></div>
+            </div>
+            <div class="progress-text" id="progressText">0 / 10</div>
+        </div>
+    </main>
+</div>
+
+<script>
+    /**
+     * CONFIGURATION
+     */
+    const LEVELS = [
+        { id: 1, name: "Basics", range: 5, type: 'interactive', desc: "Drag the dot. Small numbers." },
+        { id: 2, name: "Expansion", range: 10, type: 'interactive', desc: "Drag the dot. Full range (-10 to 10)." },
+        { id: 3, name: "Visualizer", range: 10, type: 'visual', desc: "Look at the line, type the answer." },
+        { id: 4, name: "Mental", range: 10, type: 'mental', desc: "No number line. Imagine the movement." }
+    ];
+
+    const WIN_SCORE = 10; // Consecutive correct answers to pass level
+
+    /**
+     * STATE MANAGEMENT
+     */
+    let state = {
+        level: 1,
+        maxUnlocked: 1,
+        score: 0
+    };
+
+    let currentQ = { start: 0, change: 0, target: 0 };
+    let sliderValue = 0;
+    let isDragging = false;
+
+    // DOM Elements
+    const handle = document.getElementById('handle');
+    const container = document.getElementById('numberLine');
+    const ticksContainer = document.getElementById('ticks');
+    const ghostDot = document.getElementById('ghostDot');
+    const questionEl = document.getElementById('question');
+    const instructionEl = document.getElementById('instruction');
+    const actionBtn = document.getElementById('actionBtn');
+    const numInput = document.getElementById('numInput');
+    const inputArea = document.getElementById('inputArea');
+
+    /**
+     * INITIALIZATION
+     */
+    function init() {
+        const saved = localStorage.getItem('integer_mastery_save');
+        if (saved) state = JSON.parse(saved);
+        
+        renderLevelNav();
+        loadLevel(state.level);
+        
+        setupInteractions();
+    }
+
+    function saveState() {
+        localStorage.setItem('integer_mastery_save', JSON.stringify(state));
+    }
+
+    function resetApp() {
+        if(confirm("Reset all progress?")) {
+            localStorage.removeItem('integer_mastery_save');
+            location.reload();
+        }
+    }
+
+    /**
+     * LEVEL LOGIC
+     */
+    function loadLevel(lvlId) {
+        state.level = lvlId;
+        state.score = 0;
+        saveState();
+        renderLevelNav();
+        updateUIForLevel();
+        nextQuestion();
+    }
+
+    function updateUIForLevel() {
+        const config = LEVELS.find(l => l.id === state.level);
+        
+        // Setup Line
+        if (config.type === 'mental') {
+            container.classList.add('hidden');
+        } else {
+            container.classList.remove('hidden');
+            drawTicks(config.range);
+        }
+
+        // Setup Input Method
+        if (config.type === 'interactive') {
+            handle.style.cursor = 'grab';
+            handle.classList.remove('static-indicator');
+            inputArea.classList.add('hidden');
+            actionBtn.textContent = "Check Position";
+        } else {
+            // Visual or Mental
+            handle.style.cursor = 'default';
+            handle.classList.add('static-indicator');
+            inputArea.classList.remove('hidden');
+            actionBtn.textContent = "Submit";
+            
+            // In visual mode, the handle acts as a static "You are here" marker for the start number
+            // We'll update its position in renderQuestion
+        }
+
+        updateProgress();
+    }
+
+    function drawTicks(range) {
+        ticksContainer.innerHTML = '';
+        const count = (range * 2) + 1; // e.g., -5 to 5 is 11 ticks
+        
+        for (let i = -range; i <= range; i++) {
+            const tick = document.createElement('div');
+            tick.className = i === 0 ? 'tick zero' : 'tick';
+            
+            // Calculate percentage position
+            // 0% = -range, 100% = +range
+            const percent = ((i + range) / (range * 2)) * 100;
+            tick.style.left = `${percent}%`;
+
+            // Labels
+            const label = document.createElement('div');
+            label.className = 'tick-label';
+            label.textContent = i;
+            label.style.left = `${percent}%`;
+            
+            // Only show labels for even numbers or 0 to avoid clutter on mobile
+            if (window.innerWidth < 500 && i % 2 !== 0) {
+                 // skip label
+            } else {
+                ticksContainer.appendChild(label);
+            }
+            
+            ticksContainer.appendChild(tick);
+        }
+    }
+
+    /**
+     * QUESTION GENERATION
+     */
+    function nextQuestion() {
+        const config = LEVELS.find(l => l.id === state.level);
+        const range = config.range;
+
+        // Generate numbers ensuring result stays within bounds
+        let start, change, target;
+        
+        do {
+            start = Math.floor(Math.random() * (range * 2 + 1)) - range;
+            // Bias slightly towards non-zero changes
+            change = Math.floor(Math.random() * (range * 2 + 1)) - range;
+            if (change === 0) change = 1; 
+            target = start + change;
+        } while (target < -range || target > range);
+
+        currentQ = { start, change, target };
+        
+        // Reset Input UI
+        numInput.value = '';
+        handle.classList.remove('correct-bg', 'wrong-bg');
+        numInput.classList.remove('correct-bg', 'wrong-bg');
+
+        renderQuestion(config);
+    }
+
+    function renderQuestion(config) {
+        // Format: Start +/- Change
+        const sign = currentQ.change >= 0 ? '+' : '-';
+        const absChange = Math.abs(currentQ.change);
+        
+        // Simplified syntax: "Start - Change" instead of "Start + (-Change)"
+        questionEl.innerHTML = `${currentQ.start} ${sign} ${absChange}`;
+        
+        // Instructions
+        let dirText = currentQ.change > 0 ? "right" : "left";
+        let instruction = "";
+
+        if (config.type === 'interactive') {
+            instruction = `Start at <span class="highlight">${currentQ.start}</span>. Move <span class="highlight">${absChange}</span> steps ${dirText}.`;
+            // Set slider to start position
+            setSliderValue(currentQ.start);
+            // Set ghost dot at start to remind them where they began
+            updateGhostDot(currentQ.start);
+        } 
+        else if (config.type === 'visual') {
+            instruction = `Imagine starting at ${currentQ.start} and moving ${absChange} steps ${dirText}.`;
+            // Show handle at start position statically
+            setSliderValue(currentQ.start);
+            ghostDot.style.opacity = 0; // Hide ghost in visual mode
+            numInput.focus();
+        }
+        else {
+            instruction = "Calculate mentally.";
+            numInput.focus();
+        }
+
+        instructionEl.innerHTML = instruction;
+    }
+
+    /**
+     * INTERACTION LOGIC (Slider)
+     */
+    function setupInteractions() {
+        // Drag Events
+        handle.addEventListener('mousedown', startDrag);
+        handle.addEventListener('touchstart', startDrag, {passive: false});
+
+        document.addEventListener('mousemove', onDrag);
+        document.addEventListener('touchmove', onDrag, {passive: false});
+
+        document.addEventListener('mouseup', endDrag);
+        document.addEventListener('touchend', endDrag);
+
+        // Button
+        actionBtn.addEventListener('click', checkAnswer);
+        
+        // Enter key for input
+        numInput.addEventListener('keydown', (e) => {
+            if(e.key === 'Enter') checkAnswer();
+        });
+
+        // Level Nav
+        window.addEventListener('resize', () => {
+             const config = LEVELS.find(l => l.id === state.level);
+             if(config.type !== 'mental') drawTicks(config.range);
+        });
+    }
+
+    function startDrag(e) {
+        const config = LEVELS.find(l => l.id === state.level);
+        if (config.type !== 'interactive') return;
+
+        isDragging = true;
+        handle.style.transition = 'none'; // Disable transition for direct 1:1 movement
+    }
+
+    function onDrag(e) {
+        if (!isDragging) return;
+        e.preventDefault(); // Prevent scroll on mobile
+
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+        const rect = container.getBoundingClientRect();
+        
+        // Calculate percentage within the container
+        let percent = (clientX - rect.left) / rect.width;
+        
+        // Clamp 0 to 1
+        if (percent < 0) percent = 0;
+        if (percent > 1) percent = 1;
+
+        // Convert percentage to Number Line Value
+        const config = LEVELS.find(l => l.id === state.level);
+        const range = config.range;
+        const totalTicks = range * 2;
+        
+        // Map 0..1 to -range..+range
+        const rawValue = (percent * totalTicks) - range;
+        
+        // Round to nearest integer for snapping visually
+        const snappedValue = Math.round(rawValue);
+        
+        updateHandlePosition(snappedValue, range);
+        sliderValue = snappedValue;
+        
+        handle.textContent = sliderValue;
+    }
+
+    function endDrag() {
+        if (!isDragging) return;
+        isDragging = false;
+        handle.style.transition = 'left 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        
+        // Snap physically to the exact tick
+        const config = LEVELS.find(l => l.id === state.level);
+        updateHandlePosition(sliderValue, config.range);
+    }
+
+    function setSliderValue(val) {
+        sliderValue = val;
+        handle.textContent = val;
+        const config = LEVELS.find(l => l.id === state.level);
+        updateHandlePosition(val, config.range);
+    }
+
+    function updateHandlePosition(val, range) {
+        // -range -> 0%, +range -> 100%
+        const percent = ((val + range) / (range * 2)) * 100;
+        handle.style.left = `${percent}%`;
+    }
+
+    function updateGhostDot(val) {
+        const config = LEVELS.find(l => l.id === state.level);
+        const range = config.range;
+        const percent = ((val + range) / (range * 2)) * 100;
+        ghostDot.style.left = `${percent}%`;
+        ghostDot.style.opacity = 0.5;
+    }
+
+    /**
+     * ANSWER CHECKING
+     */
+    function checkAnswer() {
+        const config = LEVELS.find(l => l.id === state.level);
+        let userAns;
+
+        if (config.type === 'interactive') {
+            userAns = sliderValue;
+        } else {
+            userAns = parseInt(numInput.value);
+            if (isNaN(userAns)) return; // Empty input
+        }
+
+        if (userAns === currentQ.target) {
+            handleSuccess();
+        } else {
+            handleFail(userAns);
+        }
+    }
+
+    function handleSuccess() {
+        const config = LEVELS.find(l => l.id === state.level);
+        
+        // Visual Feedback
+        if (config.type === 'interactive') {
+            handle.classList.add('correct-bg');
+        } else {
+            numInput.classList.add('correct-bg');
+        }
+        instructionEl.innerHTML = `<span style="color:var(--success)">Correct! ${currentQ.start} ${currentQ.change >= 0 ? '+' : '-'} ${Math.abs(currentQ.change)} = ${currentQ.target}</span>`;
+
+        state.score++;
+        updateProgress();
+
+        // Level Complete?
+        if (state.score >= WIN_SCORE) {
+            setTimeout(() => {
+                alert("Level Complete! Unlocking next level.");
+                if (state.level === state.maxUnlocked && state.level < LEVELS.length) {
+                    state.maxUnlocked++;
+                }
+                if (state.level < LEVELS.length) {
+                    loadLevel(state.level + 1);
+                } else {
+                    // Beat the game
+                    state.level = 1; // loop back or stay?
+                    loadLevel(1); 
+                }
+            }, 500);
+        } else {
+            setTimeout(nextQuestion, 1000);
+        }
+    }
+
+    function handleFail(wrongVal) {
+        const config = LEVELS.find(l => l.id === state.level);
+        
+        // Reset streak on fail? Let's be kind and just deduct or stay same.
+        // User requested mastery, so let's set back 2 points to ensure consistency.
+        state.score = Math.max(0, state.score - 2);
+        updateProgress();
+
+        if (config.type === 'interactive') {
+            handle.classList.add('wrong-bg');
+            container.classList.add('shake');
+        } else {
+            numInput.classList.add('wrong-bg');
+            inputArea.classList.add('shake');
+        }
+
+        // Helpful tip based on error
+        let tip = "Try again.";
+        if (currentQ.change < 0 && wrongVal > currentQ.start) tip = "You added instead of subtracted. Move Left.";
+        if (currentQ.change > 0 && wrongVal < currentQ.start) tip = "You subtracted instead of added. Move Right.";
+        
+        instructionEl.innerHTML = `<span style="color:var(--error)">${tip}</span>`;
+
+        setTimeout(() => {
+            container.classList.remove('shake');
+            inputArea.classList.remove('shake');
+            handle.classList.remove('wrong-bg');
+            numInput.classList.remove('wrong-bg');
+        }, 500);
+    }
+
+    function updateProgress() {
+        const pct = (state.score / WIN_SCORE) * 100;
+        document.getElementById('progressBar').style.width = `${pct}%`;
+        document.getElementById('progressText').textContent = `${state.score} / ${WIN_SCORE} for Next Level`;
+    }
+
+    function renderLevelNav() {
+        const nav = document.getElementById('levelNav');
+        nav.innerHTML = '';
+        LEVELS.forEach(l => {
+            const btn = document.createElement('div');
+            const isLocked = l.id > state.maxUnlocked;
+            const isActive = l.id === state.level;
+            
+            btn.className = `level-chip ${isActive ? 'active' : ''} ${isLocked ? 'locked' : ''}`;
+            btn.textContent = l.id + ". " + l.name;
+            
+            if (!isLocked) {
+                btn.onclick = () => loadLevel(l.id);
+            }
+            nav.appendChild(btn);
+        });
+    }
+
+    // Start
+    init();
+
+</script>
+</body>
+</html>
