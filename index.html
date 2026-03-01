@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Math Mastery: Integers</title>
+    <style>
+        /* CSS Variables for Dark Neon Theme */
+        :root {
+            --bg-color: #0b0f19;
+            --surface-color: #1a2235;
+            --primary-cyan: #05d9e8;
+            --primary-coral: #ff2a6d;
+            --success-green: #00e676;
+            --error-red: #ff1744;
+            --text-main: #ffffff;
+            --text-muted: #8a94a6;
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            --border-radius: 12px;
+        }
+
+        /* Reset & Base */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: var(--font-family);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            touch-action: manipulation;
+        }
+
+        /* Main Application Container */
+        #app {
+            width: 100%;
+            max-width: 600px;
+            height: 100vh;
+            max-height: 900px;
+            display: flex;
+            flex-direction: column;
+            background-color: var(--surface-color);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5);
+            position: relative;
+        }
+
+        @media (min-width: 601px) {
+            #app {
+                height: 95vh;
+                border-radius: var(--border-radius);
+            }
+        }
+
+        /* Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            background-color: rgba(0,0,0,0.2);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+        .logo { font-weight: 800; font-size: 1.2rem; color: var(--primary-cyan); letter-spacing: 1px;}
+        select#levelSelect {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            border: 1px solid rgba(255,255,255,0.2);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            cursor: pointer;
+        }
+        .icon-btn {
+            background: none; border: none; color: var(--text-muted); font-size: 1.2rem; cursor: pointer; transition: color 0.2s;
+        }
+        .icon-btn:hover { color: var(--error-red); }
+
+        /* Mastery Progress */
+        .mastery-container { padding: 15px 20px; }
+        .mastery-header { display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 8px; color: var(--text-muted); font-weight: 600; text-transform: uppercase; }
+        .mastery-track { background-color: var(--bg-color); height: 12px; border-radius: 10px; overflow: hidden; position: relative; box-shadow: inset 0 2px 5px rgba(0,0,0,0.5); }
+        .mastery-fill {
+            height: 100%; width: 0%; border-radius: 10px;
+            background: linear-gradient(90deg, var(--primary-cyan), var(--success-green));
+            transition: width 0.4s ease-out;
+            box-shadow: 0 0 10px rgba(5, 217, 232, 0.5);
+        }
+
+        /* Main Play Area */
+        main { flex-grow: 1; display: flex; flex-direction: column; padding: 20px; position: relative; }
+
+        /* Scaffolding Area (Number Line) */
+        #scaffoldArea { 
+            height: 130px; 
+            margin-bottom: 10px; 
+            opacity: 1; transition: opacity 0.3s; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-cyan) transparent;
+        }
+        #scaffoldArea::-webkit-scrollbar { height: 6px; }
+        #scaffoldArea::-webkit-scrollbar-thumb { background: var(--primary-cyan); border-radius: 3px; }
+
+        .number-line-container {
+            height: 120px;
+            position: relative;
+        }
+        .nl-line {
+            position: absolute;
+            top: 80px;
+            left: 0; right: 0;
+            height: 2px;
+            background-color: var(--text-muted);
+        }
+        .nl-tick {
+            position: absolute;
+            top: 75px;
+            width: 2px;
+            height: 12px;
+            background-color: var(--text-muted);
+            transform: translateX(-50%);
+        }
+        .nl-label {
+            position: absolute;
+            top: 95px;
+            transform: translateX(-50%);
+            font-size: 1.15rem; /* Larger, readable size */
+            color: var(--text-main); /* Bright color for all numbers */
+            font-weight: 500;
+        }
+        .nl-point {
+            position: absolute;
+            top: 76px;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background-color: var(--primary-cyan);
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px var(--primary-cyan);
+            z-index: 2;
+        }
+
+        /* Question Area */
+        #questionArea {
+            display: flex; justify-content: center; align-items: center; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; font-size: 3rem; font-weight: 700;
+        }
+        #equationDisplay { display: flex; gap: 10px; align-items: center; }
+        
+        /* Color Coding Classes */
+        .text-pos { color: var(--primary-cyan); text-shadow: 0 0 10px rgba(5, 217, 232, 0.3); }
+        .text-neg { color: var(--primary-coral); text-shadow: 0 0 10px rgba(255, 42, 109, 0.3); }
+
+        /* Input Box */
+        .input-wrapper { position: relative; }
+        #answerInput {
+            background-color: var(--bg-color); color: var(--text-main);
+            border: 2px solid rgba(255,255,255,0.1); border-radius: 12px;
+            width: 100px; height: 70px; font-size: 2.5rem; text-align: center; font-weight: 700;
+            outline: none; transition: border-color 0.2s, color 0.2s;
+        }
+        #answerInput:focus { border-color: var(--primary-cyan); }
+        #answerInput.error { color: var(--error-red); border-color: var(--error-red); }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake { animation: shake 0.4s; }
+
+        /* Feedback Text */
+        #feedbackText {
+            text-align: center; min-height: 50px; font-size: 0.95rem; line-height: 1.4; color: var(--text-muted); font-weight: 500; margin-bottom: 10px;
+        }
+        .feedback-error { color: var(--error-red) !important; }
+        .feedback-success { color: var(--success-green) !important; font-size: 1.2rem !important; font-weight: bold;}
+
+        /* Next Button (Overlays Keypad on Error) */
+        #nextBtn {
+            display: none; width: 100%; padding: 18px; font-size: 1.2rem; font-weight: bold; border-radius: 12px; border: none; cursor: pointer;
+            background: linear-gradient(135deg, var(--primary-coral), #d50000); color: white;
+            box-shadow: 0 4px 15px rgba(255, 42, 109, 0.4); margin-bottom: 20px; transition: transform 0.1s;
+        }
+        #nextBtn:active { transform: scale(0.98); }
+        #nextBtn.visible { display: block; animation: fadeIn 0.3s ease-out; }
+
+        /* Keypad */
+        #keypad {
+            display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 20px; background-color: rgba(0,0,0,0.15); border-top: 1px solid rgba(255,255,255,0.05); margin-top: auto;
+        }
+        #keypad.disabled { opacity: 0.5; pointer-events: none; }
+        .key-btn {
+            background-color: var(--surface-color); color: var(--text-main); font-size: 1.5rem; font-weight: 600;
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 15px 0; cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2); transition: all 0.1s ease; user-select: none;
+        }
+        .key-btn:active, .key-btn.active-visual { transform: scale(0.95); background-color: rgba(255,255,255,0.1); }
+        .key-action { background-color: #2c3854; color: var(--primary-cyan); }
+        .key-enter { background: linear-gradient(135deg, var(--primary-cyan), #007bb5); color: #fff; grid-column: span 3; box-shadow: 0 4px 15px rgba(5, 217, 232, 0.3); }
+
+        /* Modal */
+        #modalOverlay {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+        }
+        #modalOverlay.active { opacity: 1; pointer-events: auto; }
+        .modal-box {
+            background-color: var(--surface-color); padding: 30px; border-radius: var(--border-radius); text-align: center; max-width: 95%; width: 400px;
+            border: 1px solid var(--primary-cyan); box-shadow: 0 0 30px rgba(5, 217, 232, 0.2); transform: scale(0.9); transition: transform 0.3s;
+        }
+        #modalOverlay.active .modal-box { transform: scale(1); }
+        .modal-title { font-size: 1.8rem; color: var(--primary-cyan); margin-bottom: 10px; }
+        .modal-text { color: var(--text-muted); margin-bottom: 25px; line-height: 1.5; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+        .modal-btn {
+            background: linear-gradient(135deg, var(--primary-cyan), #007bb5); color: white; border: none; padding: 12px 20px; font-size: 1rem;
+            border-radius: 8px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(5, 217, 232, 0.3); transition: transform 0.1s; flex: 1;
+        }
+        .modal-btn:active { transform: scale(0.95); }
+        .modal-btn.secondary {
+            background: rgba(255,255,255,0.1); color: var(--text-main); border: 1px solid rgba(255,255,255,0.2); box-shadow: none;
+        }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .hidden { display: none !important; }
+
+    </style>
+</head>
+<body>
+
+<div id="app">
+    <!-- Header -->
+    <header>
+        <div class="logo">Math Mastery</div>
+        <select id="levelSelect" aria-label="Select Level"></select>
+        <button class="icon-btn" id="resetBtn" title="Reset Progress" aria-label="Reset Progress">↻</button>
+    </header>
+
+    <!-- Progress Bar -->
+    <div class="mastery-container">
+        <div class="mastery-header">
+            <span id="levelLabel">Level 1</span>
+            <span id="masteryText">0% Mastery</span>
+        </div>
+        <div class="mastery-track">
+            <div class="mastery-fill" id="masteryFill"></div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main id="playArea">
+        <div id="scaffoldArea">
+            <!-- Number line rendered here via JS -->
+        </div>
+
+        <div id="questionArea">
+            <div id="equationDisplay"></div>
+            <div class="input-wrapper">
+                <input type="text" id="answerInput" readonly placeholder="?" aria-label="Answer Input">
+            </div>
+        </div>
+
+        <div id="feedbackText"></div>
+        <button id="nextBtn">Got It. Next Question!</button>
+    </main>
+
+    <!-- Custom Keypad -->
+    <div id="keypad">
+        <button class="key-btn" data-val="1">1</button>
+        <button class="key-btn" data-val="2">2</button>
+        <button class="key-btn" data-val="3">3</button>
+        <button class="key-btn" data-val="4">4</button>
+        <button class="key-btn" data-val="5">5</button>
+        <button class="key-btn" data-val="6">6</button>
+        <button class="key-btn" data-val="7">7</button>
+        <button class="key-btn" data-val="8">8</button>
+        <button class="key-btn" data-val="9">9</button>
+        <button class="key-btn key-action" id="keyMinus">(-)</button>
+        <button class="key-btn" data-val="0">0</button>
+        <button class="key-btn key-action" id="keyDel">DEL</button>
+        <button class="key-btn key-enter" id="keyEnter">SUBMIT</button>
+    </div>
+
+    <!-- Level Complete Modal -->
+    <div id="modalOverlay">
+        <div class="modal-box">
+            <h2 class="modal-title">Level Complete!</h2>
+            <p class="modal-text" id="modalMessage">You have mastered this rule. Ready for the next challenge?</p>
+            <div class="modal-actions">
+                <button class="modal-btn secondary" id="modalKeepPracticingBtn">Keep Practicing</button>
+                <button class="modal-btn" id="modalNextLevelBtn">Next Level</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    /**
+     * Math Mastery: Integers - Core Logic
+     */
+
+    // Configuration
+    const LEVELS =[
+        { id: 1, name: "L1: Crossing Zero" },
+        { id: 2, name: "L2: Starting in the Hole" },
+        { id: 3, name: "L3: Digging Deeper" },
+        { id: 4, name: "L4: Disguised Subtraction" },
+        { id: 5, name: "L5: The Double Negative" },
+        { id: 6, name: "L6: The Boss Level" },
+        { id: 7, name: "L7: Generalization" }
+    ];
+
+    // App State
+    let state = {
+        unlockedLevel: 1,
+        currentLevel: 1,
+        mastery: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 }
+    };
+
+    let currentQuestion = null;
+    let startTime = 0;
+    let inputVal = "";
+    let previousSelectValue = 1;
+
+    // DOM Elements
+    const levelSelect = document.getElementById("levelSelect");
+    const resetBtn = document.getElementById("resetBtn");
+    const levelLabel = document.getElementById("levelLabel");
+    const masteryText = document.getElementById("masteryText");
+    const masteryFill = document.getElementById("masteryFill");
+    const scaffoldArea = document.getElementById("scaffoldArea");
+    const equationDisplay = document.getElementById("equationDisplay");
+    const answerInput = document.getElementById("answerInput");
+    const feedbackText = document.getElementById("feedbackText");
+    const nextBtn = document.getElementById("nextBtn");
+    const keypad = document.getElementById("keypad");
+    const modalOverlay = document.getElementById("modalOverlay");
+    const modalMessage = document.getElementById("modalMessage");
+    const modalNextLevelBtn = document.getElementById("modalNextLevelBtn");
+    const modalKeepPracticingBtn = document.getElementById("modalKeepPracticingBtn");
+
+    // Initialize App
+    function init() {
+        loadData();
+        populateLevelDropdown();
+        setupEventListeners();
+        startLevel(state.currentLevel);
+    }
+
+    // Local Storage
+    function loadData() {
+        try {
+            const saved = localStorage.getItem("mathMasteryState");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                state = { ...state, ...parsed };
+                for(let i=1; i<=7; i++) {
+                    state.mastery[i] = Math.min(100, Math.max(0, state.mastery[i] || 0));
+                }
+            }
+        } catch (e) {
+            console.warn("Could not load local storage", e);
+        }
+    }
+
+    function saveData() {
+        try {
+            localStorage.setItem("mathMasteryState", JSON.stringify(state));
+        } catch (e) {
+            console.warn("Could not save to local storage", e);
+        }
+    }
+
+    // Setup Event Listeners
+    function setupEventListeners() {
+        // Dropdown tracking focus for reverting
+        levelSelect.addEventListener("focus", () => {
+            previousSelectValue = levelSelect.value;
+        });
+
+        // Dropdown change (with Password Check)
+        levelSelect.addEventListener("change", (e) => {
+            let selectedLvl = parseInt(e.target.value);
+            if (selectedLvl > state.unlockedLevel) {
+                let pass = prompt("This level is locked. Enter password to unlock:");
+                if (pass === "8102") {
+                    state.unlockedLevel = selectedLvl;
+                    saveData();
+                    populateLevelDropdown(); 
+                    startLevel(selectedLvl);
+                } else {
+                    alert("Incorrect password.");
+                    levelSelect.value = previousSelectValue;
+                }
+            } else {
+                startLevel(selectedLvl);
+            }
+            previousSelectValue = levelSelect.value;
+        });
+
+        // Reset
+        resetBtn.addEventListener("click", () => {
+            if(confirm("Are you sure you want to reset all your progress?")) {
+                localStorage.removeItem("mathMasteryState");
+                state = { unlockedLevel: 1, currentLevel: 1, mastery: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 } };
+                populateLevelDropdown();
+                startLevel(1);
+            }
+        });
+
+        // Keypad Clicks
+        document.querySelectorAll(".key-btn[data-val]").forEach(btn => {
+            btn.addEventListener("click", () => handleInput(btn.getAttribute("data-val")));
+        });
+        document.getElementById("keyMinus").addEventListener("click", toggleMinus);
+        document.getElementById("keyDel").addEventListener("click", deleteInput);
+        document.getElementById("keyEnter").addEventListener("click", submitAnswer);
+
+        // Next Button (After Error)
+        nextBtn.addEventListener("click", () => {
+            nextBtn.classList.remove("visible");
+            keypad.classList.remove("disabled");
+            answerInput.classList.remove("error");
+            generateNewQuestion();
+        });
+
+        // Modal Buttons
+        modalNextLevelBtn.addEventListener("click", () => {
+            modalOverlay.classList.remove("active");
+            if(state.currentLevel < 7) {
+                startLevel(state.currentLevel + 1);
+            } else {
+                startLevel(7);
+            }
+        });
+        
+        modalKeepPracticingBtn.addEventListener("click", () => {
+            modalOverlay.classList.remove("active");
+            // Keeps current level, allows practice at 100% without reset
+            generateNewQuestion();
+        });
+
+        // Physical Keyboard Support
+        document.addEventListener('keydown', handlePhysicalKeyboard);
+    }
+
+    // Physical Keyboard Handler
+    function handlePhysicalKeyboard(e) {
+        if (modalOverlay.classList.contains('active')) {
+            if(e.key === 'Enter') modalNextLevelBtn.click();
+            return;
+        }
+        
+        if (nextBtn.classList.contains('visible')) {
+            if (e.key === 'Enter' || e.key === ' ') nextBtn.click();
+            return;
+        }
+
+        // Prevent physical keyboard input while feedback is showing
+        if (keypad.classList.contains('disabled')) return;
+
+        if (e.key >= '0' && e.key <= '9') {
+            handleInput(e.key);
+            triggerKeyVisual(e.key);
+        } else if (e.key === '-' || e.key === '_') {
+            toggleMinus();
+            triggerKeyVisual('-');
+        } else if (e.key === 'Backspace') {
+            deleteInput();
+            triggerKeyVisual('Backspace');
+        } else if (e.key === 'Enter') {
+            submitAnswer();
+            triggerKeyVisual('Enter');
+        }
+    }
+
+    function triggerKeyVisual(val) {
+        let btn;
+        if (val === '-') btn = document.getElementById('keyMinus');
+        else if (val === 'Backspace') btn = document.getElementById('keyDel');
+        else if (val === 'Enter') btn = document.getElementById('keyEnter');
+        else btn = document.querySelector(`.key-btn[data-val="${val}"]`);
+        
+        if(btn) {
+            btn.classList.add('active-visual');
+            setTimeout(() => btn.classList.remove('active-visual'), 100);
+        }
+    }
+
+    // UI Updates
+    function populateLevelDropdown() {
+        levelSelect.innerHTML = "";
+        LEVELS.forEach(lvl => {
+            const opt = document.createElement("option");
+            opt.value = lvl.id;
+            let text = lvl.name;
+            if (lvl.id > state.unlockedLevel) text = "🔒 " + text;
+            opt.textContent = text;
+            if (lvl.id === state.currentLevel) opt.selected = true;
+            levelSelect.appendChild(opt);
+        });
+    }
+
+    function updateMasteryUI() {
+        const p = state.mastery[state.currentLevel];
+        masteryFill.style.width = p + "%";
+        masteryText.textContent = p + "% Mastery";
+        levelLabel.textContent = LEVELS[state.currentLevel - 1].name.split(":")[0];
+    }
+
+    function startLevel(levelId) {
+        state.currentLevel = levelId;
+        levelSelect.value = levelId;
+        previousSelectValue = levelId;
+        updateMasteryUI();
+        generateNewQuestion();
+    }
+
+    // Helper: Random Integer
+    function rand(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    // Question Generation
+    function generateNewQuestion() {
+        inputVal = "";
+        answerInput.value = "";
+        answerInput.classList.remove("error");
+        feedbackText.innerHTML = "";
+        feedbackText.className = "";
+        keypad.classList.remove("disabled");
+        nextBtn.classList.remove("visible");
+
+        let lvl = state.currentLevel;
+        let type = lvl;
+
+        if (lvl === 6 || lvl === 7) {
+            type = rand(1, 5); // Pick random rule
+        }
+
+        let qData;
+        if (lvl <= 5) qData = getOperandsL1_5(type);
+        else if (lvl === 6) qData = getOperandsL6(type);
+        else qData = getOperandsL7(type);
+
+        let answer = qData.op === '+' ? qData.num1 + qData.num2 : qData.num1 - qData.num2;
+        currentQuestion = { num1: qData.num1, op: qData.op, num2: qData.num2, answer, type };
+        
+        renderScaffolding();
+        startTime = Date.now();
+    }
+
+    function getOperandsL1_5(type) {
+        let num1, num2, op;
+        switch(type) {
+            case 1: // Crossing Zero: Pos - larger Pos
+                num1 = rand(1, 9);
+                num2 = rand(num1 + 1, 10);
+                op = '-'; break;
+            case 2: // Starting in the hole: Neg + Pos
+                num1 = rand(-10, -1);
+                num2 = rand(1, 10);
+                op = '+'; break;
+            case 3: // Digging deeper: Neg - Pos
+                num1 = rand(-9, -1);
+                num2 = rand(1, 10);
+                op = '-'; break;
+            case 4: // Disguised Subtraction: Pos + Neg
+                num1 = rand(1, 10);
+                num2 = rand(-10, -1);
+                op = '+'; break;
+            case 5: // Double negative: Minus a negative
+                num1 = rand(-10, 10);
+                if (num1 === 0) num1 = rand(1, 5);
+                num2 = rand(-10, -1);
+                op = '-'; break;
+        }
+        return {num1, num2, op};
+    }
+
+    function getOperandsL6(type) {
+        let num1, num2, op;
+        switch(type) {
+            case 1:
+                num1 = rand(1, 11);
+                num2 = rand(num1 + 1, 12);
+                op = '-'; break;
+            case 2:
+                num1 = rand(-12, -1);
+                num2 = rand(1, 12);
+                op = '+'; break;
+            case 3:
+                num1 = rand(-11, -1);
+                num2 = rand(1, 12);
+                op = '-'; break;
+            case 4:
+                num1 = rand(1, 12);
+                num2 = rand(-12, -1);
+                op = '+'; break;
+            case 5:
+                num1 = rand(-12, 12);
+                if (num1===0) num1 = 2;
+                num2 = rand(-12, -1);
+                op = '-'; break;
+        }
+        return {num1, num2, op};
+    }
+
+    function getOperandsL7(type) {
+        let num1, num2, op;
+        switch(type) {
+            case 1:
+                num1 = rand(1, 49);
+                num2 = rand(num1 + 1, 50);
+                op = '-'; break;
+            case 2:
+                num1 = rand(-50, -1);
+                num2 = rand(1, 50);
+                op = '+'; break;
+            case 3:
+                num1 = rand(-49, -1);
+                num2 = rand(1, 50);
+                op = '-'; break;
+            case 4:
+                num1 = rand(1, 50);
+                num2 = rand(-50, -1);
+                op = '+'; break;
+            case 5:
+                num1 = rand(-50, 50);
+                if (num1===0) num1 = 5;
+                num2 = rand(-50, -1);
+                op = '-'; break;
+        }
+        return {num1, num2, op};
+    }
+
+    // Scaffolding Logic
+    function renderScaffolding() {
+        const mastery = state.mastery[state.currentLevel];
+        const q = currentQuestion;
+
+        scaffoldArea.innerHTML = "";
+        scaffoldArea.style.opacity = "0";
+
+        let strNum1 = q.num1.toString();
+        let strNum2 = q.num2 < 0 ? `(${q.num2})` : q.num2.toString();
+
+        if (mastery <= 33) {
+            // Phase 1: Visual Number Line + Plain Equation
+            equationDisplay.innerHTML = `<span>${strNum1}</span> <span>${q.op}</span> <span>${strNum2}</span> <span>=</span>`;
+            scaffoldArea.style.opacity = "1";
+            drawNumberLine(q);
+        } 
+        else if (mastery <= 66) {
+            // Phase 2: Color Coding
+            const colorize = (n, isOp=false) => {
+                if(isOp) return n === '+' ? `<span class="text-pos">+</span>` : `<span class="text-neg">-</span>`;
+                let numStr = n < 0 ? `(${n})` : `${n}`;
+                return n < 0 ? `<span class="text-neg">${numStr}</span>` : `<span class="text-pos">${numStr}</span>`;
+            };
+            let num1Str = q.num1 < 0 ? `<span class="text-neg">${q.num1}</span>` : `<span class="text-pos">${q.num1}</span>`;
+            equationDisplay.innerHTML = `${num1Str} ${colorize(q.op, true)} ${colorize(q.num2)} <span>=</span>`;
+        } 
+        else {
+            // Phase 3: Abstract (Plain)
+            equationDisplay.innerHTML = `<span>${strNum1}</span> <span>${q.op}</span> <span>${strNum2}</span> <span>=</span>`;
+        }
+    }
+
+    function drawNumberLine(q) {
+        let minLimit = Math.min(q.num1, q.answer) - 2;
+        let maxLimit = Math.max(q.num1, q.answer) + 2;
+        let range = maxLimit - minLimit;
+        
+        let container = document.createElement('div');
+        container.className = 'number-line-container';
+        
+        let spacing = 45; // pixels between each integer
+        let width = range * spacing + 60; // padding
+        container.style.width = width + 'px';
+
+        // Base Line
+        let line = document.createElement('div');
+        line.className = 'nl-line';
+        container.appendChild(line);
+
+        // Ticks and Labels (Every integer)
+        for(let i = minLimit; i <= maxLimit; i++) {
+            let x = 30 + (i - minLimit) * spacing;
+            
+            let tick = document.createElement('div');
+            tick.className = 'nl-tick';
+            tick.style.left = x + 'px';
+            container.appendChild(tick);
+
+            let label = document.createElement('div');
+            label.className = 'nl-label';
+            label.style.left = x + 'px';
+            label.textContent = i;
+            container.appendChild(label);
+        }
+
+        // SVG Container for Arcs
+        let svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.style.position = 'absolute';
+        svg.style.top = '0';
+        svg.style.left = '0';
+        svg.style.width = '100%';
+        svg.style.height = '100%';
+        svg.style.pointerEvents = 'none';
+        
+        // Arrowhead definition
+        let defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+        let marker = document.createElementNS('http://www.w3.org/2000/svg', 'marker');
+        marker.setAttribute('id', 'arrowhead');
+        marker.setAttribute('markerWidth', '8');
+        marker.setAttribute('markerHeight', '8');
+        marker.setAttribute('refX', '7');
+        marker.setAttribute('refY', '4');
+        marker.setAttribute('orient', 'auto');
+        let polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        polygon.setAttribute('points', '0 0, 8 4, 0 8');
+        polygon.setAttribute('fill', 'var(--primary-coral)');
+        marker.appendChild(polygon);
+        defs.appendChild(marker);
+        svg.appendChild(defs);
+
+        // Start Point Indicator
+        let startPoint = document.createElement('div');
+        startPoint.className = 'nl-point';
+        startPoint.style.left = (30 + (q.num1 - minLimit) * spacing) + 'px';
+        container.appendChild(startPoint);
+
+        // Draw Arcs (Jumps)
+        let dir = q.num1 < q.answer ? 1 : -1;
+        let steps = Math.abs(q.answer - q.num1);
+        
+        for(let step = 0; step < steps; step++) {
+            let currentVal = q.num1 + (step * dir);
+            let nextVal = currentVal + dir;
+            
+            let x1 = 30 + (currentVal - minLimit) * spacing;
+            let x2 = 30 + (nextVal - minLimit) * spacing;
+            let y = 80; // Baseline Y coord
+            
+            let isLast = (step === steps - 1);
+            
+            let path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            let cx = (x1 + x2) / 2;
+            let cy = 30; // Peak of the arc
+            
+            let d = `M ${x1} ${y} Q ${cx} ${cy} ${x2} ${y}`;
+            path.setAttribute('d', d);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', 'var(--primary-coral)');
+            path.setAttribute('stroke-width', '2.5');
+            
+            if(isLast) {
+                path.setAttribute('marker-end', 'url(#arrowhead)');
+            }
+            svg.appendChild(path);
+        }
+
+        container.appendChild(svg);
+        scaffoldArea.appendChild(container);
+
+        // Auto-scroll logic to center the active area
+        setTimeout(() => {
+            let startX = 30 + (q.num1 - minLimit) * spacing;
+            let endX = 30 + (q.answer - minLimit) * spacing;
+            let targetX = (startX + endX) / 2;
+            let scrollPos = targetX - scaffoldArea.clientWidth / 2;
+            scaffoldArea.scrollLeft = scrollPos;
+        }, 50);
+    }
+
+    // Input Handling
+    function handleInput(val) {
+        if(inputVal.length < 4) { // Allows e.g. -100
+            inputVal += val;
+            updateInputDisplay();
+        }
+    }
+
+    function toggleMinus() {
+        if(inputVal.startsWith('-')) {
+            inputVal = inputVal.substring(1);
+        } else {
+            inputVal = '-' + inputVal;
+        }
+        updateInputDisplay();
+    }
+
+    function deleteInput() {
+        if(inputVal.length > 0) {
+            inputVal = inputVal.slice(0, -1);
+            if(inputVal === '-') inputVal = ''; // Clear lone minus
+            updateInputDisplay();
+        }
+    }
+
+    function updateInputDisplay() {
+        answerInput.value = inputVal;
+    }
+
+    // Game Logic
+    function submitAnswer() {
+        // Prevent multiple submissions while feedback is showing
+        if(keypad.classList.contains('disabled')) return; 
+        
+        if(inputVal === '' || inputVal === '-') return;
+
+        let userAnswer = parseInt(inputVal, 10);
+        let q = currentQuestion;
+
+        if (userAnswer === q.answer) {
+            handleCorrect();
+        } else {
+            handleIncorrect();
+        }
+    }
+
+    function handleCorrect() {
+        let elapsed = Date.now() - startTime;
+        let gain = elapsed < 5000 ? 15 : 5;
+        let lvl = state.currentLevel;
+        let firstTimeMastery = false;
+        
+        // Show success briefly
+        feedbackText.textContent = "Correct!";
+        feedbackText.className = "feedback-success";
+        keypad.classList.add("disabled");
+        answerInput.style.borderColor = "var(--success-green)";
+        answerInput.style.color = "var(--success-green)";
+
+        // Update Mastery (Only if below 100%)
+        if (state.mastery[lvl] < 100) {
+            state.mastery[lvl] += gain;
+            if (state.mastery[lvl] >= 100) {
+                state.mastery[lvl] = 100;
+                firstTimeMastery = true;
+                
+                // Unlock next level if applicable
+                if (lvl === state.unlockedLevel && lvl < 7) {
+                    state.unlockedLevel = lvl + 1;
+                    populateLevelDropdown();
+                    levelSelect.value = state.currentLevel;
+                }
+            }
+        }
+
+        updateMasteryUI();
+        saveData();
+
+        if (firstTimeMastery) {
+            setTimeout(showLevelCompleteModal, 600);
+        } else {
+            setTimeout(() => {
+                answerInput.style.borderColor = "";
+                answerInput.style.color = "";
+                generateNewQuestion();
+            }, 800);
+        }
+    }
+
+    function handleIncorrect() {
+        let lvl = state.currentLevel;
+
+        // Mastery Penalty ONLY if not already fully mastered (Progress stays 100% if practicing)
+        if (state.mastery[lvl] < 100) {
+            state.mastery[lvl] = Math.max(0, state.mastery[lvl] - 20);
+            updateMasteryUI();
+            saveData();
+        }
+
+        // Visual Feedback
+        answerInput.classList.remove("shake");
+        void answerInput.offsetWidth; // trigger reflow
+        answerInput.classList.add("shake", "error");
+        
+        // Populate correct answer
+        answerInput.value = currentQuestion.answer;
+        
+        // Generate Text Feedback
+        let q = currentQuestion;
+        let msg = "";
+
+        if (q.type === 1 || q.type === 3) {
+            msg = `Incorrect. Start at ${q.num1} and move ${Math.abs(q.num2)} spaces to the LEFT.`;
+        } else if (q.type === 4) {
+            msg = `Incorrect. Adding a negative is like subtraction. Start at ${q.num1} and move ${Math.abs(q.num2)} spaces to the LEFT.`;
+        } else if (q.type === 2) {
+            msg = `Incorrect. Start at ${q.num1} and move ${q.num2} spaces to the RIGHT.`;
+        } else if (q.type === 5) {
+            msg = `Incorrect. Subtracting a negative is the same as moving FORWARD. Change minus a negative to a PLUS!`;
+        }
+
+        feedbackText.textContent = msg;
+        feedbackText.className = "feedback-error";
+
+        // Force user to acknowledge
+        keypad.classList.add("disabled");
+        nextBtn.classList.add("visible");
+    }
+
+    function showLevelCompleteModal() {
+        if(state.currentLevel < 7) {
+            modalMessage.textContent = `You've achieved 100% mastery on ${LEVELS[state.currentLevel-1].name.split(':')[0]}. Ready to unlock the next challenge?`;
+            modalNextLevelBtn.style.display = "block";
+            modalNextLevelBtn.textContent = "Proceed to Next Level";
+            modalKeepPracticingBtn.style.display = "block";
+        } else {
+            modalMessage.textContent = "Incredible! You have fully mastered integer addition and subtraction!";
+            modalNextLevelBtn.style.display = "none";
+            modalKeepPracticingBtn.style.display = "block";
+            modalKeepPracticingBtn.textContent = "Keep Practicing";
+        }
+        modalOverlay.classList.add("active");
+        modalNextLevelBtn.focus();
+    }
+
+    // Run App
+    document.addEventListener("DOMContentLoaded", init);
+
+</script>
+</body>
+</html>
